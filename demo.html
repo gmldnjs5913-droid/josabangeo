@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="조사방어">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>조사방어</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #0A0A0A; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+    .screen { display: none; flex-direction: column; height: 100%; }
+    .screen.active { display: flex; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #0A0A0A; border-bottom: 1px solid #1e1e1e; min-height: 52px; }
+    .header h1 { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+    .header .timer { font-size: 12px; color: #ffffff66; }
+    .btn-icon { background: none; border: none; color: #aaa; font-size: 20px; cursor: pointer; padding: 6px; }
+    .btn-danger-text { background: none; border: none; color: #FF1744; font-size: 14px; font-weight: 600; cursor: pointer; padding: 6px 10px; }
+
+    /* 홈 */
+    #home { overflow-y: auto; }
+    .home-inner { padding: 24px; display: flex; flex-direction: column; min-height: 100%; }
+    .home-icon { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #00E5FF; background: rgba(0,229,255,0.05); display: flex; align-items: center; justify-content: center; margin: 24px auto 20px; font-size: 42px; }
+    .home-title { text-align: center; font-size: 20px; font-weight: 700; line-height: 1.5; margin-bottom: 10px; }
+    .home-desc { text-align: center; font-size: 13px; color: #ffffff66; line-height: 1.7; margin-bottom: 28px; }
+    .feature-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 14px; color: #ffffffb0; }
+    .feature-row span.icon { color: #00E5FF; font-size: 18px; }
+    .warn-box { background: rgba(255,214,0,0.08); border: 1px solid rgba(255,214,0,0.3); border-radius: 8px; padding: 12px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 14px; font-size: 12px; color: #FFD600; line-height: 1.5; cursor: pointer; }
+    .btn-start { width: 100%; height: 54px; background: #FF1744; color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; margin-top: 20px; }
+    .home-note { text-align: center; font-size: 11px; color: #ffffff33; margin-bottom: 24px; }
+
+    /* 이전 세션 */
+    .section-title { font-size: 12px; color: #ffffff44; margin: 20px 0 10px; letter-spacing: 1px; text-transform: uppercase; }
+    .session-item { background: #1A1A1A; border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .session-item:hover { background: #222; }
+    .session-date { font-size: 12px; color: #ffffff66; margin-bottom: 4px; }
+    .session-summary { font-size: 13px; color: #ffffffcc; line-height: 1.4; }
+    .session-count { font-size: 11px; color: #ffffff33; white-space: nowrap; margin-left: 10px; }
+    .session-del { background: none; border: none; color: #ffffff22; font-size: 16px; cursor: pointer; padding: 4px 6px; }
+    .session-del:hover { color: #FF1744; }
+    .no-sessions { font-size: 13px; color: #ffffff22; text-align: center; padding: 16px; }
+
+    /* 설정 */
+    #settings { padding: 24px; }
+    .settings-label { font-size: 12px; color: #ffffff66; margin-bottom: 8px; }
+    .settings-input { width: 100%; background: #1A1A1A; border: none; border-radius: 8px; padding: 14px 44px 14px 14px; color: #fff; font-size: 13px; outline: none; }
+    .input-wrap { position: relative; margin-bottom: 16px; }
+    .toggle-vis { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #ffffff44; cursor: pointer; font-size: 16px; }
+    .btn-save { width: 100%; height: 48px; background: #00E5FF; color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .settings-note { margin-top: 20px; font-size: 12px; color: #ffffff33; line-height: 1.7; }
+
+    /* 녹음 */
+    #recording { overflow: hidden; }
+    .danger-banner { padding: 14px 16px; transition: background 0.5s; }
+    .danger-level { font-size: 24px; font-weight: 700; margin-bottom: 3px; }
+    .danger-reason { font-size: 12px; margin-bottom: 8px; }
+    .danger-advice { border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; text-align: center; }
+    .interim-text { background: #1A1A1A; padding: 7px 14px; font-size: 13px; color: #ffffff44; font-style: italic; min-height: 34px; }
+    .transcript { flex: 1; overflow-y: auto; padding: 12px; }
+    .msg-wrap { margin-bottom: 10px; display: flex; flex-direction: column; }
+    .msg-wrap.me { align-items: flex-end; }
+    .msg-wrap.inv { align-items: flex-start; }
+    .msg-meta { font-size: 10px; color: #ffffff33; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+    .msg-bubble { max-width: 80%; padding: 9px 13px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+    .msg-wrap.inv .msg-bubble { background: #2A2A2A; border-bottom-left-radius: 3px; }
+    .msg-wrap.me .msg-bubble { background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.25); border-bottom-right-radius: 3px; color: #00E5FF; }
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff22; gap: 12px; font-size: 14px; }
+    .text-input-bar { background: #111; padding: 8px 8px 8px 12px; display: flex; gap: 6px; align-items: center; border-top: 1px solid #1e1e1e; }
+    .text-input-bar input { flex: 1; background: #1E1E1E; border: none; border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px; outline: none; }
+    .text-input-bar input::placeholder { color: #ffffff22; }
+    .btn-send { background: none; border: none; color: #00E5FF; font-size: 22px; cursor: pointer; padding: 4px 8px; }
+    .status-bar { background: #1A1A1A; padding: 8px 16px; display: flex; align-items: center; gap: 8px; justify-content: center; border-top: 1px solid #222; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF1744; transition: background 0.3s; }
+    .status-dot.on { background: #00C853; }
+    .status-text { font-size: 12px; color: #ffffff55; }
+    .status-count { font-size: 12px; color: #ffffff33; margin-left: 12px; }
+
+    /* 리포트 */
+    #report { overflow: hidden; }
+    .tab-bar { display: flex; border-bottom: 1px solid #222; }
+    .tab { flex: 1; padding: 11px; text-align: center; font-size: 13px; color: #ffffff44; cursor: pointer; border-bottom: 2px solid transparent; }
+    .tab.active { color: #00E5FF; border-bottom-color: #00E5FF; }
+    .tab-content { flex: 1; overflow-y: auto; padding: 16px; display: none; }
+    .tab-content.active { display: block; }
+    .report-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #1e1e1e; }
+    .btn-action { background: none; border: 1px solid #ffffff22; border-radius: 6px; color: #ffffffaa; font-size: 12px; padding: 6px 12px; cursor: pointer; }
+    .btn-action:hover { border-color: #ffffff44; color: #fff; }
+
+    /* 요약 카드 */
+    .summary-card { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .summary-card h3 { font-size: 13px; color: #00E5FF; margin-bottom: 12px; letter-spacing: 1px; }
+    .summary-bullet { display: flex; gap: 10px; margin-bottom: 8px; font-size: 14px; line-height: 1.5; color: #ffffffcc; }
+    .summary-bullet .num { color: #00E5FF; font-weight: 700; min-width: 18px; }
+
+    .report-entry { margin-bottom: 12px; display: flex; gap: 10px; }
+    .report-time { font-size: 11px; color: #ffffff33; white-space: nowrap; }
+    .report-speaker { font-size: 11px; white-space: nowrap; }
+    .report-speaker.inv { color: #ffffff55; }
+    .report-speaker.me { color: #00E5FF; }
+    .report-text { font-size: 14px; line-height: 1.5; }
+    .report-body { font-size: 14px; color: #ffffffb0; line-height: 1.9; white-space: pre-wrap; }
+    .loading-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; gap: 16px; color: #ffffff55; font-size: 14px; }
+    .spinner { width: 28px; height: 28px; border: 3px solid #1e1e1e; border-top-color: #00E5FF; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 저장된 세션 뷰 */
+    #saved-view { overflow: hidden; }
+    .saved-header { padding: 12px 16px; border-bottom: 1px solid #1e1e1e; display: flex; align-items: center; gap: 12px; }
+    .saved-date { font-size: 13px; color: #ffffff88; }
+    .saved-body { flex: 1; overflow-y: auto; padding: 16px; }
+  </style>
+</head>
+<body>
+
+<!-- ══ 홈 ══ -->
+<div id="home" class="screen active">
+  <div class="header">
+    <h1>🛡️ 조사방어</h1>
+    <button class="btn-icon" onclick="showScreen('settings')">⚙️</button>
+  </div>
+  <div class="home-inner">
+    <div class="home-title">실시간 경찰 조사<br>방어권 보조 시스템</div>
+    <div class="home-desc">음성을 실시간 분석하여 유도신문·함정 질문을<br>즉시 감지하고 방어 가이드를 제공합니다.</div>
+    <div class="feature-row"><span class="icon">🎤</span> 실시간 음성 인식 (STT)</div>
+    <div class="feature-row"><span class="icon">⚠️</span> 위험도 3단계 실시간 감지</div>
+    <div class="feature-row"><span class="icon">📝</span> 조사 종료 후 AI 사후 대응 리포트</div>
+    <div class="feature-row"><span class="icon">💾</span> 세션 자동 저장 + .txt 다운로드</div>
+    <div id="warn-key" class="warn-box" onclick="showScreen('settings')" style="display:none;">
+      ⚠️ AI 분석을 위해 <b>설정에서 Anthropic API 키</b>를 입력해주세요.
+    </div>
+    <button class="btn-start" onclick="startSession()">▶ 조사 시작</button>
+    <div class="home-note">※ Chrome / Edge 에서 음성 인식이 지원됩니다.</div>
+    <div class="section-title">이전 세션</div>
+    <div id="session-list"></div>
+  </div>
+</div>
+
+<!-- ══ 설정 ══ -->
+<div id="settings" class="screen">
+  <div class="header">
+    <button class="btn-icon" onclick="showScreen('home')">←</button>
+    <h1>설정</h1>
+    <div></div>
+  </div>
+  <div style="padding:24px;">
+    <div class="settings-label">Anthropic API Key</div>
+    <div class="input-wrap">
+      <input id="api-key-input" class="settings-input" type="password" placeholder="sk-ant-..." autocomplete="off">
+      <button class="toggle-vis" onclick="toggleVis()">👁</button>
+    </div>
+    <button class="btn-save" onclick="saveKey()">저장</button>
+    <div class="settings-note">
+      ※ API 키는 브라우저 로컬 스토리지에만 저장되며 외부로 전송되지 않습니다.<br>
+      ※ 실시간 분석: claude-haiku-4-5 / 리포트: claude-sonnet-4-6
+    </div>
+  </div>
+</div>
+
+<!-- ══ 녹음 ══ -->
+<div id="recording" class="screen">
+  <div class="header">
+    <span class="timer" id="rec-timer">00:00:00</span>
+    <h1>조사 진행 중</h1>
+    <button class="btn-danger-text" onclick="endSession()">조사 종료</button>
+  </div>
+  <div class="danger-banner" id="danger-banner" style="background:rgba(0,200,83,0.12);">
+    <div class="danger-level" id="danger-label" style="color:#00C853">🟢 안전</div>
+    <div class="danger-reason" id="danger-reason" style="color:#00C85399"></div>
+    <div class="danger-advice" id="danger-advice" style="display:none;"></div>
+  </div>
+  <div class="interim-text" id="interim-text"></div>
+  <div class="transcript" id="transcript">
+    <div class="empty-state" id="empty-state">
+      <span style="font-size:36px;">🎤</span>
+      음성을 인식하고 있습니다...
+    </div>
+  </div>
+  <div class="text-input-bar">
+    <input id="text-input" type="text" placeholder="직접 입력 (나의 답변)" onkeydown="if(event.key==='Enter')submitText()">
+    <button class="btn-send" onclick="submitText()">➤</button>
+  </div>
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span class="status-text" id="status-text">마이크 비활성</span>
+    <span class="status-count" id="status-count">0개 발화</span>
+  </div>
+</div>
+
+<!-- ══ 리포트 ══ -->
+<div id="report" class="screen">
+  <div class="header">
+    <button class="btn-icon" onclick="showScreen('home'); initHome()">🏠</button>
+    <h1>AI 사후 대응 리포트</h1>
+    <div></div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab active" id="tab-transcript" onclick="switchTab('transcript')">녹취록</div>
+    <div class="tab" id="tab-summary" onclick="switchTab('summary')">요약</div>
+    <div class="tab" id="tab-ai" onclick="switchTab('ai')">상세 리포트</div>
+  </div>
+  <div class="report-actions">
+    <button class="btn-action" onclick="downloadTxt()">💾 저장</button>
+    <button class="btn-action" onclick="copyReport()">📋 복사</button>
+  </div>
+  <div id="content-transcript" class="tab-content active"></div>
+  <div id="content-summary" class="tab-content">
+    <div class="loading-box" id="summary-loading"><div class="spinner"></div>요약 생성 중...</div>
+    <div id="summary-body" style="display:none;"></div>
+  </div>
+  <div id="content-ai" class="tab-content">
+    <div class="loading-box" id="report-loading"><div class="spinner"></div>AI 리포트 생성 중...</div>
+    <div class="report-body" id="report-body" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ══ 저장된 세션 뷰 ══ -->
+<div id="saved-view" class="screen">
+  <div class="header">
+    <button class="btn-icon" onclick="showScreen('home')">←</button>
+    <h1 id="saved-view-title">세션 보기</h1>
+    <button class="btn-action" onclick="downloadSaved()" style="border:1px solid #ffffff22;border-radius:6px;color:#ffffffaa;font-size:12px;padding:6px 12px;cursor:pointer;background:none;">💾 저장</button>
+  </div>
+  <div class="saved-body" id="saved-body"></div>
+</div>
+
+<script>
+const HAIKU  = 'claude-haiku-4-5-20251001';
+const SONNET = 'claude-sonnet-4-6';
+const API_URL = 'https://api.anthropic.com/v1/messages';
+
+let apiKey = localStorage.getItem('anthropic_key') || '';
+let entries = [];
+let elapsed = 0;
+let clockInterval = null;
+let recognition = null;
+let isListening = false;
+let pendingAnalysis = '';
+let analysisTimeout = null;
+let currentTab = 'transcript';
+let currentReport = '';
+let currentSummaryBullets = [];
+let viewingSession = null;
+
+// ── 화면 ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function initHome() {
+  document.getElementById('api-key-input').value = apiKey;
+  document.getElementById('warn-key').style.display = apiKey ? 'none' : 'flex';
+  renderSessionList();
+}
+
+// ── 설정 ──
+function toggleVis() {
+  const inp = document.getElementById('api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function saveKey() {
+  apiKey = document.getElementById('api-key-input').value.trim();
+  localStorage.setItem('anthropic_key', apiKey);
+  showScreen('home');
+  initHome();
+  alert('저장되었습니다.');
+}
+
+// ── 세션 시작 ──
+function startSession() {
+  if (!apiKey && !confirm('API 키 없이는 AI 분석이 되지 않습니다. 계속하시겠습니까?')) return;
+  entries = [];
+  elapsed = 0;
+  pendingAnalysis = '';
+  currentReport = '';
+  currentSummaryBullets = [];
+  renderTranscript();
+  showScreen('recording');
+  startClock();
+  startSTT();
+}
+
+function startClock() {
+  clockInterval = setInterval(() => {
+    elapsed++;
+    const h = String(Math.floor(elapsed/3600)).padStart(2,'0');
+    const m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+    const s = String(elapsed%60).padStart(2,'0');
+    document.getElementById('rec-timer').textContent = `${h}:${m}:${s}`;
+  }, 1000);
+}
+
+// ── STT ──
+function startSTT() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { setStatus(false); return; }
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onstart = () => { isListening = true; setStatus(true); };
+  recognition.onend = () => {
+    isListening = false; setStatus(false);
+    if (document.getElementById('recording').classList.contains('active'))
+      setTimeout(() => recognition.start(), 500);
+  };
+  recognition.onerror = (e) => { if (e.error === 'not-allowed') alert('마이크 권한을 허용해주세요.'); };
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) { const t = r[0].transcript.trim(); if (t) addEntry(t, 'inv'); }
+      else interim += r[0].transcript;
+    }
+    document.getElementById('interim-text').textContent = interim;
+  };
+  recognition.start();
+}
+
+function setStatus(on) {
+  document.getElementById('status-dot').className = 'status-dot' + (on ? ' on' : '');
+  document.getElementById('status-text').textContent = on ? '음성 인식 중' : '마이크 비활성';
+}
+
+// ── 텍스트 입력 ──
+function submitText() {
+  const inp = document.getElementById('text-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  addEntry(text, 'me');
+}
+
+// ── 발화 추가 ──
+function addEntry(text, speaker) {
+  entries.push({ time: new Date(), text, speaker });
+  renderTranscript();
+  document.getElementById('status-count').textContent = `${entries.length}개 발화`;
+  if (speaker === 'inv') {
+    pendingAnalysis += ' ' + text;
+    clearTimeout(analysisTimeout);
+    if (pendingAnalysis.trim().length > 20)
+      analysisTimeout = setTimeout(() => analyzeText(pendingAnalysis), 300);
+  }
+}
+
+function renderTranscript() {
+  const wrap = document.getElementById('transcript');
+  const empty = document.getElementById('empty-state');
+  if (entries.length === 0) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+  wrap.innerHTML = entries.map(e => {
+    const t = e.time;
+    const ts = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+    const isMe = e.speaker === 'me';
+    const meta = isMe ? `<span>${ts}</span><span>⌨️ 나</span>` : `<span>🎤 수사관</span><span>${ts}</span>`;
+    return `<div class="msg-wrap ${isMe?'me':'inv'}"><div class="msg-meta">${meta}</div><div class="msg-bubble">${esc(e.text)}</div></div>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── 위험도 분석 ──
+const DC = ['#00C853','#FFD600','#FF1744'];
+const DB = ['rgba(0,200,83,0.12)','rgba(255,214,0,0.12)','rgba(255,23,68,0.12)'];
+const DL = ['🟢 안전','🟡 주의','🔴 위험'];
+
+async function analyzeText(text) {
+  if (!apiKey) return;
+  pendingAnalysis = '';
+  const sys = `당신은 경찰 조사 방어권 전문 AI입니다. 수사관 발언을 분석하여 반드시 아래 JSON 형식으로만 응답하세요.
+{"level":0,"reason":"한 줄 이유","advice":"피조사자 행동 지침"}
+level: 0=안전(단순사실확인) 1=주의(압박/일관성흔들기) 2=위험(유도신문/자백유도)`;
+  try {
+    const res = await callClaude(HAIKU, sys, `수사관 발언: ${text}`, 256);
+    const m = res.match(/\{.*\}/s);
+    if (!m) return;
+    const d = JSON.parse(m[0]);
+    const lv = Math.min(2, Math.max(0, d.level ?? 0));
+    document.getElementById('danger-banner').style.background = DB[lv];
+    const lbl = document.getElementById('danger-label');
+    lbl.textContent = DL[lv]; lbl.style.color = DC[lv];
+    const rsn = document.getElementById('danger-reason');
+    rsn.textContent = d.reason || ''; rsn.style.color = DC[lv] + '99';
+    const adv = document.getElementById('danger-advice');
+    if (d.advice) {
+      adv.textContent = '💡 ' + d.advice;
+      adv.style.display = 'block';
+      adv.style.background = DB[lv];
+      adv.style.color = DC[lv];
+      adv.style.border = `1px solid ${DC[lv]}44`;
+    } else adv.style.display = 'none';
+  } catch(e) { console.error(e); }
+}
+
+// ── 세션 종료 ──
+function endSession() {
+  if (recognition) { recognition.onend = null; recognition.stop(); }
+  clearInterval(clockInterval);
+  isListening = false;
+  document.getElementById('interim-text').textContent = '';
+  switchTab('transcript');
+  showScreen('report');
+  renderReportTranscript();
+  generateSummary();
+  generateReport();
+  saveSession();
+}
+
+function renderReportTranscript() {
+  document.getElementById('content-transcript').innerHTML = entries.map(e => {
+    const ts = `${pad(e.time.getHours())}:${pad(e.time.getMinutes())}:${pad(e.time.getSeconds())}`;
+    const isMe = e.speaker === 'me';
+    return `<div class="report-entry">
+      <span class="report-time">${ts}</span>
+      <span class="report-speaker ${isMe?'me':'inv'}">${isMe?'[나]':'[수사관]'}</span>
+      <span class="report-text">${esc(e.text)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── AI 요약 (Haiku, 빠름) ──
+async function generateSummary() {
+  document.getElementById('summary-loading').style.display = 'flex';
+  document.getElementById('summary-body').style.display = 'none';
+  if (!apiKey) {
+    document.getElementById('summary-loading').style.display = 'none';
+    document.getElementById('summary-body').style.display = 'block';
+    document.getElementById('summary-body').innerHTML = '<p style="color:#ffffff44;font-size:13px;">API 키가 없어 요약을 생성할 수 없습니다.</p>';
+    return;
+  }
+  const transcript = buildTranscriptText();
+  const sys = `경찰 조사 녹취록을 분석하여 반드시 아래 JSON 형식으로만 응답하세요.
+{"bullets":["핵심 내용 1","핵심 내용 2","핵심 내용 3"],"danger":"전체 위험도 한 줄 평가","advice":"가장 중요한 즉시 조치 사항"}
+bullets는 3~5개, 각 30자 이내.`;
+  try {
+    const res = await callClaude(HAIKU, sys, `녹취록:\n${transcript}`, 512);
+    const m = res.match(/\{.*\}/s);
+    const d = m ? JSON.parse(m[0]) : null;
+    currentSummaryBullets = d?.bullets || [];
+    const html = `
+      <div class="summary-card">
+        <h3>⚡ 핵심 요약</h3>
+        ${(d?.bullets||[]).map((b,i)=>`<div class="summary-bullet"><span class="num">${i+1}.</span><span>${esc(b)}</span></div>`).join('')}
+      </div>
+      <div class="summary-card" style="border-color:rgba(255,214,0,0.2);background:rgba(255,214,0,0.05);">
+        <h3 style="color:#FFD600;">🔍 위험도 평가</h3>
+        <div style="font-size:14px;color:#ffffffcc;line-height:1.6;">${esc(d?.danger||'-')}</div>
+      </div>
+      <div class="summary-card" style="border-color:rgba(255,23,68,0.2);background:rgba(255,23,68,0.05);">
+        <h3 style="color:#FF6B6B;">💡 즉시 조치</h3>
+        <div style="font-size:14px;color:#ffffffcc;line-height:1.6;">${esc(d?.advice||'-')}</div>
+      </div>`;
+    document.getElementById('summary-loading').style.display = 'none';
+    document.getElementById('summary-body').style.display = 'block';
+    document.getElementById('summary-body').innerHTML = html;
+  } catch(e) {
+    document.getElementById('summary-loading').style.display = 'none';
+    document.getElementById('summary-body').style.display = 'block';
+    document.getElementById('summary-body').innerHTML = `<p style="color:#ff6b6b;font-size:13px;">요약 생성 실패: ${e.message}</p>`;
+  }
+}
+
+// ── AI 상세 리포트 (Sonnet) ──
+async function generateReport() {
+  document.getElementById('report-loading').style.display = 'flex';
+  document.getElementById('report-body').style.display = 'none';
+  if (!apiKey) {
+    document.getElementById('report-loading').style.display = 'none';
+    document.getElementById('report-body').style.display = 'block';
+    document.getElementById('report-body').textContent = 'API 키가 없어 리포트를 생성할 수 없습니다.';
+    return;
+  }
+  const sys = `당신은 형사 전문 법률 AI 어시스턴트입니다. 경찰 조사 녹취록을 분석하여 아래 형식으로 사후 대응 리포트를 작성하세요.
+## 1. 조사 요약
+## 2. 수사관 주요 질문 패턴 분석
+## 3. 경찰의 수사 프레임 분석
+## 4. 유리한 진술 포인트
+## 5. 보완이 필요한 부분
+## 6. 추가 수집 권장 증거
+## 7. 검찰 단계 대응 전략 (변호인 의견서 초안 가이드)
+※ 이 리포트는 법률 조언이 아니며 반드시 변호인과 함께 검토하세요.`;
+  try {
+    currentReport = await callClaude(SONNET, sys, `전체 녹취록:\n${buildTranscriptText()}`, 2048);
+    document.getElementById('report-loading').style.display = 'none';
+    document.getElementById('report-body').style.display = 'block';
+    document.getElementById('report-body').textContent = currentReport;
+  } catch(e) {
+    document.getElementById('report-loading').style.display = 'none';
+    document.getElementById('report-body').style.display = 'block';
+    document.getElementById('report-body').textContent = '리포트 생성 실패: ' + e.message;
+  }
+}
+
+function buildTranscriptText() {
+  return entries.map(e => `[${pad(e.time.getHours())}:${pad(e.time.getMinutes())}:${pad(e.time.getSeconds())}] ${e.speaker==='me'?'[나]':'[수사관]'} ${e.text}`).join('\n');
+}
+
+// ── Claude API ──
+async function callClaude(model, system, userMsg, maxTokens) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role:'user', content: userMsg }] }),
+  });
+  if (!res.ok) throw new Error(`API 오류 ${res.status}`);
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+// ── 탭 전환 ──
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('content-' + tab).classList.add('active');
+}
+
+// ── 저장 ──
+function saveSession() {
+  const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const session = {
+    id: now.getTime(),
+    date: dateStr,
+    elapsed,
+    entries: entries.map(e => ({ time: e.time.getTime(), text: e.text, speaker: e.speaker })),
+  };
+  sessions.unshift(session);
+  if (sessions.length > 20) sessions.pop();
+  localStorage.setItem('sessions', JSON.stringify(sessions));
+}
+
+function downloadTxt() {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+  let content = `조사방어 세션 기록\n생성일시: ${now.toLocaleString('ko-KR')}\n${'='.repeat(50)}\n\n`;
+  content += `[녹취록]\n${buildTranscriptText()}\n\n`;
+  if (currentReport) content += `${'='.repeat(50)}\n\n[AI 상세 리포트]\n${currentReport}\n`;
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `조사방어_${dateStr}.txt`;
+  a.click();
+}
+
+function downloadSaved() {
+  if (!viewingSession) return;
+  const sess = viewingSession;
+  let content = `조사방어 세션 기록\n일시: ${sess.date}\n${'='.repeat(50)}\n\n[녹취록]\n`;
+  content += sess.entries.map(e => {
+    const t = new Date(e.time);
+    return `[${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}] ${e.speaker==='me'?'[나]':'[수사관]'} ${e.text}`;
+  }).join('\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `조사방어_${sess.date.replace(/[: ]/g,'_')}.txt`;
+  a.click();
+}
+
+function copyReport() {
+  let text = '';
+  if (currentTab === 'ai') text = currentReport;
+  else if (currentTab === 'summary') text = currentSummaryBullets.join('\n');
+  else text = buildTranscriptText();
+  navigator.clipboard.writeText(text).then(() => alert('복사되었습니다.'));
+}
+
+// ── 저장된 세션 목록 ──
+function renderSessionList() {
+  const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+  const wrap = document.getElementById('session-list');
+  if (sessions.length === 0) {
+    wrap.innerHTML = '<div class="no-sessions">저장된 세션이 없습니다</div>';
+    return;
+  }
+  wrap.innerHTML = sessions.map((s, i) => `
+    <div class="session-item" onclick="viewSession(${i})">
+      <div style="flex:1;min-width:0;">
+        <div class="session-date">📅 ${s.date}</div>
+        <div class="session-summary">${s.entries.length}개 발화 · ${formatElapsed(s.elapsed||0)}</div>
+      </div>
+      <button class="session-del" onclick="deleteSession(event,${i})">✕</button>
+    </div>`).join('');
+}
+
+function formatElapsed(sec) {
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  if (h > 0) return `${h}시간 ${m}분`;
+  if (m > 0) return `${m}분 ${s}초`;
+  return `${s}초`;
+}
+
+function viewSession(idx) {
+  const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+  const sess = sessions[idx];
+  if (!sess) return;
+  viewingSession = sess;
+  document.getElementById('saved-view-title').textContent = sess.date;
+  const body = document.getElementById('saved-body');
+  body.innerHTML = sess.entries.map(e => {
+    const t = new Date(e.time);
+    const ts = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+    const isMe = e.speaker === 'me';
+    return `<div class="report-entry">
+      <span class="report-time">${ts}</span>
+      <span class="report-speaker ${isMe?'me':'inv'}">${isMe?'[나]':'[수사관]'}</span>
+      <span class="report-text">${esc(e.text)}</span>
+    </div>`;
+  }).join('');
+  showScreen('saved-view');
+}
+
+function deleteSession(e, idx) {
+  e.stopPropagation();
+  if (!confirm('이 세션을 삭제하시겠습니까?')) return;
+  const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+  sessions.splice(idx, 1);
+  localStorage.setItem('sessions', JSON.stringify(sessions));
+  renderSessionList();
+}
+
+// ── 초기화 ──
+initHome();
+</script>
+</body>
+</html>
