@@ -106,6 +106,7 @@
     .loading-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; gap: 16px; color: #ffffff55; font-size: 14px; }
     .spinner { width: 28px; height: 28px; border: 3px solid #1e1e1e; border-top-color: #00E5FF; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 
     /* 저장된 세션 뷰 */
     #saved-view { overflow: hidden; }
@@ -215,6 +216,10 @@
     <div class="status-dot" id="status-dot"></div>
     <span class="status-text" id="status-text">마이크 비활성</span>
     <span class="status-count" id="status-count">0개 발화</span>
+    <span id="rec-indicator" style="display:none;margin-left:12px;display:none;align-items:center;gap:5px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:#FF1744;animation:pulse 1s infinite;" id="rec-dot"></span>
+      <span style="font-size:11px;color:#FF1744;">녹음 중</span>
+    </span>
   </div>
 </div>
 
@@ -232,6 +237,7 @@
   </div>
   <div class="report-actions">
     <button class="btn-action" onclick="downloadTxt()">💾 저장</button>
+    <button class="btn-action" id="btn-download-audio" onclick="downloadAudio()" style="display:none;">🎙️ 녹음파일</button>
     <button class="btn-action" onclick="copyReport()">📋 복사</button>
   </div>
   <div id="content-transcript" class="tab-content active"></div>
@@ -324,6 +330,9 @@ let currentTab = 'transcript';
 let currentReport = '';
 let currentSummaryBullets = [];
 let viewingSession = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let audioBlob = null;
 
 // ── 화면 ──
 function showScreen(id) {
@@ -358,10 +367,13 @@ function startSession() {
   pendingAnalysis = '';
   currentReport = '';
   currentSummaryBullets = [];
+  audioChunks = [];
+  audioBlob = null;
   renderTranscript();
   showScreen('recording');
   startClock();
   startSTT();
+  startRecording();
 }
 
 function startClock() {
@@ -479,11 +491,50 @@ level: 0=안전(단순사실확인) 1=주의(압박/일관성흔들기) 2=위험
   } catch(e) { console.error(e); }
 }
 
+// ── 녹음 ──
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+      stream.getTracks().forEach(t => t.stop());
+      const btn = document.getElementById('btn-download-audio');
+      if (btn) btn.style.display = 'inline-block';
+    };
+    mediaRecorder.start(1000);
+    const ind = document.getElementById('rec-indicator');
+    if (ind) ind.style.display = 'flex';
+  } catch(e) {
+    console.warn('녹음 시작 실패:', e);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  const ind = document.getElementById('rec-indicator');
+  if (ind) ind.style.display = 'none';
+}
+
+function downloadAudio() {
+  if (!audioBlob) return;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(audioBlob);
+  a.download = `조사녹음_${dateStr}.${ext}`;
+  a.click();
+}
+
 // ── 세션 종료 ──
 function endSession() {
   if (recognition) { recognition.onend = null; recognition.stop(); }
   clearInterval(clockInterval);
   isListening = false;
+  stopRecording();
   document.getElementById('interim-text').textContent = '';
   switchTab('transcript');
   showScreen('report');
